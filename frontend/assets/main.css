@@ -1,0 +1,21 @@
+:root {
+  --bg: #edf0f2;
+  --surface: #ffffff;
+  --ink: #14213d;
+  --muted: #5b6472;
+  --line: #d5dae0;
+  --pass: #178a4c;
+  --warn: #c77d0e;
+  --fail: #b23a3a;
+  --unknown: #c9ced4;
+  --font: 'IBM Plex Sans', system-ui, sans-serif;
+  --font-display: 'IBM Plex Sans Condensed', 'IBM Plex Sans', system-ui, sans-serif;
+}
+* { box-sizing: border-box; }
+html, body { margin: 0; background: var(--bg); color: var(--ink); font-family: var(--font); font-size: 15px; line-height: 1.45; }
+body { font-variant-numeric: tabular-nums; }
+a { color: inherit; }
+button, input { font: inherit; }
+button { cursor: pointer; }
+:focus-visible { outline: 2px solid var(--ink); outline-offset: 2px; }
+@media (prefers-reduced-motion: reduce) { * { transition: none !important; animation: none !important; } }

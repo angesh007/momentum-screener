@@ -1,0 +1,19 @@
+# One ticker per line. Finnhub's free tier has no screener endpoint,
+# so the scan runs over this candidate list (plus anything typed in the UI).
+# Replace with your own pre-market gapper list each morning.
+SOUN
+BBAI
+IONQ
+RGTI
+QUBT
+LUNR
+RKLB
+ACHR
+JOBY
+OPEN
+CLOV
+DNA
+NNOX
+GOEV
+MARA
+RIOT
