@@ -1,21 +1,183 @@
+/* ------------------------------------------------------------------ *
+ * Design tokens
+ * Every component references these variables, so switching the theme
+ * is a matter of swapping token values — no per-component overrides.
+ * ------------------------------------------------------------------ */
 :root {
-  --bg: #edf0f2;
+  /* Surfaces & structure */
+  --bg: #eef1f4;
   --surface: #ffffff;
+  --surface-2: #f5f7f9;   /* nested / elevated-on-surface */
+  --surface-3: #eaeef2;   /* subtle fills, table stripes  */
+
+  /* Text */
   --ink: #14213d;
+  --ink-soft: #33405b;
   --muted: #5b6472;
-  --line: #d5dae0;
+
+  /* Lines */
+  --line: #d8dde3;
+  --line-strong: #c2c9d1;
+
+  /* Semantic status */
   --pass: #178a4c;
   --warn: #c77d0e;
   --fail: #b23a3a;
-  --unknown: #c9ced4;
+  --unknown: #c2c9d1;
+
+  /* Soft status backgrounds (badges / tinted panels) */
+  --pass-bg: #e3f3ea;
+  --warn-bg: #faf0dd;
+  --fail-bg: #f7e6e6;
+  --unknown-bg: #eceff2;
+
+  /* Accent — actions, primary buttons, focus, chart entry line */
+  --accent: #2f5fd8;
+  --accent-strong: #2549ad;
+  --accent-ink: #ffffff;
+  --accent-bg: #e7edfb;
+
+  /* Depth */
+  --shadow-sm: 0 1px 2px rgba(20, 33, 61, .06);
+  --shadow: 0 4px 16px rgba(20, 33, 61, .10);
+  --shadow-lg: 0 12px 40px rgba(20, 33, 61, .22);
+
+  /* Shape */
+  --radius: 8px;
+  --radius-lg: 14px;
+  --radius-pill: 999px;
+
+  /* Type */
   --font: 'IBM Plex Sans', system-ui, sans-serif;
   --font-display: 'IBM Plex Sans Condensed', 'IBM Plex Sans', system-ui, sans-serif;
+
+  color-scheme: light;
 }
+
+/* ------------------------------------------------------------------ *
+ * Dark theme — a considered financial-dashboard palette (deep slate,
+ * not inverted). Applied via [data-theme="dark"] on <html>.
+ * ------------------------------------------------------------------ */
+:root[data-theme="dark"] {
+  --bg: #0c1117;
+  --surface: #151c26;
+  --surface-2: #1b2431;
+  --surface-3: #212b3a;
+
+  --ink: #e8eef6;
+  --ink-soft: #c2ccda;
+  --muted: #8b98ab;
+
+  --line: #29333f;
+  --line-strong: #38455a;
+
+  --pass: #35c77e;
+  --warn: #e0a53a;
+  --fail: #f0616d;
+  --unknown: #3a4658;
+
+  --pass-bg: #12281f;
+  --warn-bg: #2c2413;
+  --fail-bg: #2e181c;
+  --unknown-bg: #1e2836;
+
+  --accent: #4f86ff;
+  --accent-strong: #6f9dff;
+  --accent-ink: #0c1117;
+  --accent-bg: #172338;
+
+  --shadow-sm: 0 1px 2px rgba(0, 0, 0, .35);
+  --shadow: 0 4px 16px rgba(0, 0, 0, .45);
+  --shadow-lg: 0 16px 44px rgba(0, 0, 0, .60);
+
+  color-scheme: dark;
+}
+
+/* ------------------------------------------------------------------ *
+ * Base
+ * ------------------------------------------------------------------ */
 * { box-sizing: border-box; }
-html, body { margin: 0; background: var(--bg); color: var(--ink); font-family: var(--font); font-size: 15px; line-height: 1.45; }
-body { font-variant-numeric: tabular-nums; }
-a { color: inherit; }
-button, input { font: inherit; }
+
+html, body {
+  margin: 0;
+  background: var(--bg);
+  color: var(--ink);
+  font-family: var(--font);
+  font-size: 15px;
+  line-height: 1.5;
+}
+body { font-variant-numeric: tabular-nums; -webkit-font-smoothing: antialiased; }
+
+/* Theme transition — kept subtle and only on color properties. */
+html { transition: background-color .2s ease; }
+html.theme-ready body,
+html.theme-ready body * {
+  transition: background-color .2s ease, border-color .2s ease, color .2s ease;
+}
+
+a { color: var(--accent); }
+button, input, textarea, select { font: inherit; color: inherit; }
 button { cursor: pointer; }
-:focus-visible { outline: 2px solid var(--ink); outline-offset: 2px; }
-@media (prefers-reduced-motion: reduce) { * { transition: none !important; animation: none !important; } }
+
+:focus-visible { outline: 2px solid var(--accent); outline-offset: 2px; border-radius: 3px; }
+
+code {
+  background: var(--surface-3);
+  border: 1px solid var(--line);
+  padding: 1px 6px;
+  border-radius: 5px;
+  font-size: .92em;
+}
+
+/* Custom scrollbars so overflow areas match the theme */
+* { scrollbar-color: var(--line-strong) transparent; scrollbar-width: thin; }
+*::-webkit-scrollbar { width: 10px; height: 10px; }
+*::-webkit-scrollbar-thumb { background: var(--line-strong); border-radius: 999px; border: 2px solid transparent; background-clip: padding-box; }
+*::-webkit-scrollbar-thumb:hover { background: var(--muted); background-clip: padding-box; }
+
+::selection { background: var(--accent); color: var(--accent-ink); }
+
+@media (prefers-reduced-motion: reduce) {
+  * { transition: none !important; animation: none !important; }
+}
+
+/* ------------------------------------------------------------------ *
+ * Shared utilities (global so scoped components can reuse them)
+ * ------------------------------------------------------------------ */
+
+/* Status badge / pill */
+.badge {
+  display: inline-flex;
+  align-items: center;
+  gap: 5px;
+  font-size: 12px;
+  font-weight: 600;
+  line-height: 1;
+  padding: 5px 10px;
+  border-radius: var(--radius-pill);
+  border: 1px solid transparent;
+  white-space: nowrap;
+}
+.badge--pass    { background: var(--pass-bg);    color: var(--pass); }
+.badge--warn    { background: var(--warn-bg);    color: var(--warn); }
+.badge--fail    { background: var(--fail-bg);    color: var(--fail); }
+.badge--unknown { background: var(--unknown-bg); color: var(--muted); }
+.badge--accent  { background: var(--accent-bg);  color: var(--accent-strong); }
+.badge--dot::before { content: ""; width: 6px; height: 6px; border-radius: 50%; background: currentColor; }
+
+/* Loading skeleton shimmer */
+.skeleton {
+  position: relative;
+  overflow: hidden;
+  background: var(--surface-3);
+  border-radius: var(--radius);
+}
+.skeleton::after {
+  content: "";
+  position: absolute;
+  inset: 0;
+  transform: translateX(-100%);
+  background: linear-gradient(90deg, transparent, var(--surface-2), transparent);
+  animation: shimmer 1.3s infinite;
+}
+@keyframes shimmer { 100% { transform: translateX(100%); } }

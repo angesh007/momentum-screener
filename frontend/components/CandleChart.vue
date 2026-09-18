@@ -23,25 +23,58 @@ const view = computed(() => {
 </script>
 
 <template>
-  <svg v-if="view" :viewBox="`0 0 ${W} ${H}`" class="chart" role="img" aria-label="One-minute candles">
-    <g v-for="(b, i) in view.bars" :key="i" :class="b.up ? 'up' : 'down'">
-      <line :x1="b.cx" :x2="b.cx" :y1="b.yh" :y2="b.yl" />
-      <rect :x="b.x" :width="b.w" :y="Math.min(b.yo, b.yc)" :height="Math.max(1, Math.abs(b.yo - b.yc))" />
-    </g>
-    <g v-for="l in view.lines" :key="l.k" :class="l.k">
-      <line x1="0" :x2="W" :y1="l.y" :y2="l.y" />
-      <text :x="W - 4" :y="l.y - 3" text-anchor="end">{{ l.k }} {{ l.v!.toFixed(2) }}</text>
-    </g>
-  </svg>
-  <p v-else class="empty">No intraday candles — Finnhub's free plan doesn't include them. Read the setup on your broker's 1-minute chart.</p>
+  <div v-if="view" class="chart-wrap">
+    <svg :viewBox="`0 0 ${W} ${H}`" class="chart" role="img" aria-label="One-minute candles" preserveAspectRatio="none">
+      <g v-for="(b, i) in view.bars" :key="i" :class="b.up ? 'up' : 'down'">
+        <line :x1="b.cx" :x2="b.cx" :y1="b.yh" :y2="b.yl" />
+        <rect :x="b.x" :width="b.w" :y="Math.min(b.yo, b.yc)" :height="Math.max(1, Math.abs(b.yo - b.yc))" rx="0.5" />
+      </g>
+      <g v-for="l in view.lines" :key="l.k" :class="l.k">
+        <line x1="0" :x2="W" :y1="l.y" :y2="l.y" />
+        <text :x="W - 4" :y="l.y - 4" text-anchor="end">{{ l.k }} {{ l.v!.toFixed(2) }}</text>
+      </g>
+    </svg>
+    <div class="axis">
+      <span>H {{ view.hi.toFixed(2) }}</span>
+      <span>L {{ view.lo.toFixed(2) }}</span>
+    </div>
+  </div>
+  <p v-else class="empty">
+    No intraday candles — Finnhub's free plan doesn't include them.
+    Read the setup on your broker's 1-minute chart.
+  </p>
 </template>
 
 <style scoped>
-.chart { width: 100%; height: auto; background: var(--surface); border: 1px solid var(--line); border-radius: 4px; }
+.chart-wrap { position: relative; }
+.chart {
+  width: 100%;
+  height: auto;
+  display: block;
+  background: var(--surface-2);
+  border: 1px solid var(--line);
+  border-radius: var(--radius);
+}
 .up line, .up rect { stroke: var(--pass); fill: var(--pass); }
 .down line, .down rect { stroke: var(--fail); fill: var(--fail); }
-.entry line, .stop line, .target line { stroke-dasharray: 4 4; stroke-width: 1; }
-.entry line { stroke: var(--ink); } .stop line { stroke: var(--fail); } .target line { stroke: var(--pass); }
-text { font-size: 11px; fill: var(--muted); }
-.empty { color: var(--muted); font-size: 13px; }
+.entry line, .stop line, .target line { stroke-dasharray: 4 4; stroke-width: 1.2; }
+.entry line  { stroke: var(--accent); }
+.stop line   { stroke: var(--fail); }
+.target line { stroke: var(--pass); }
+.entry text  { fill: var(--accent); }
+.stop text   { fill: var(--fail); }
+.target text { fill: var(--pass); }
+text { font-size: 11px; font-weight: 600; fill: var(--muted); }
+.axis {
+  position: absolute;
+  top: 6px; left: 8px;
+  display: flex;
+  flex-direction: column;
+  align-items: flex-start;
+  gap: 2px;
+  font-size: 11px;
+  color: var(--muted);
+  pointer-events: none;
+}
+.empty { color: var(--muted); font-size: 13px; margin: 0; }
 </style>

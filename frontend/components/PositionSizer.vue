@@ -12,24 +12,68 @@ const gainRest = computed(() => (shares.value - half.value) * ((props.setup.targ
 
 <template>
   <div class="sizer">
-    <label>
+    <label class="risk-input">
       <span>Max loss on this trade ($)</span>
       <input v-model.number="riskDollars" type="number" min="1" step="10">
     </label>
-    <ol v-if="shares > 0">
-      <li>Buy <b>{{ shares }}</b> shares at <b>{{ setup.entry?.toFixed(2) }}</b> (≈ ${{ cost.toFixed(0) }}). Limit order, not market.</li>
-      <li>Stop at <b>{{ setup.stop?.toFixed(2) }}</b> — a full stop-out costs ${{ riskDollars }}.</li>
-      <li>At <b>{{ setup.scale_out?.toFixed(2) }}</b> sell {{ half }} shares (+${{ gainHalf.toFixed(0) }}) and move the stop to {{ setup.entry?.toFixed(2) }}. The trade is now risk-free.</li>
-      <li>Sell the rest at <b>{{ setup.target?.toFixed(2) }}</b> (+${{ gainRest.toFixed(0) }}) — that's the 2:1.</li>
-    </ol>
+
+    <template v-if="shares > 0">
+      <div class="summary">
+        <div class="metric">
+          <span class="k">Shares</span>
+          <span class="v">{{ shares }}</span>
+        </div>
+        <div class="metric">
+          <span class="k">Est. cost</span>
+          <span class="v">${{ cost.toFixed(0) }}</span>
+        </div>
+        <div class="metric">
+          <span class="k">Max loss</span>
+          <span class="v risk">${{ riskDollars }}</span>
+        </div>
+      </div>
+      <ol>
+        <li>Buy <b>{{ shares }}</b> shares at <b>{{ setup.entry?.toFixed(2) }}</b> (≈ ${{ cost.toFixed(0) }}). Limit order, not market.</li>
+        <li>Stop at <b>{{ setup.stop?.toFixed(2) }}</b> — a full stop-out costs ${{ riskDollars }}.</li>
+        <li>At <b>{{ setup.scale_out?.toFixed(2) }}</b> sell {{ half }} shares (<span class="pos">+${{ gainHalf.toFixed(0) }}</span>) and move the stop to {{ setup.entry?.toFixed(2) }}. The trade is now risk-free.</li>
+        <li>Sell the rest at <b>{{ setup.target?.toFixed(2) }}</b> (<span class="pos">+${{ gainRest.toFixed(0) }}</span>) — that's the 2:1.</li>
+      </ol>
+    </template>
     <p v-else class="empty">Risk per share is zero or unknown — no size can be computed.</p>
   </div>
 </template>
 
 <style scoped>
-.sizer { display: grid; gap: 10px; }
-label { display: grid; gap: 4px; font-size: 13px; color: var(--muted); max-width: 240px; }
-input { border: 1px solid var(--line); border-radius: 4px; padding: 8px 10px; background: var(--surface); color: var(--ink); }
-ol { margin: 0; padding-left: 20px; display: grid; gap: 6px; font-size: 14px; }
+.sizer { display: grid; gap: 14px; }
+.risk-input { display: grid; gap: 5px; font-size: 13px; color: var(--muted); max-width: 260px; }
+.risk-input input {
+  border: 1px solid var(--line);
+  border-radius: var(--radius);
+  padding: 9px 11px;
+  background: var(--surface-2);
+  color: var(--ink);
+}
+.risk-input input:focus-visible { border-color: var(--accent); }
+
+.summary {
+  display: grid;
+  grid-template-columns: repeat(3, 1fr);
+  gap: 8px;
+}
+.metric {
+  display: grid;
+  gap: 3px;
+  padding: 10px 12px;
+  background: var(--surface-2);
+  border: 1px solid var(--line);
+  border-radius: var(--radius);
+}
+.metric .k { font-size: 11px; text-transform: uppercase; letter-spacing: .04em; color: var(--muted); }
+.metric .v { font-size: 18px; font-weight: 700; font-family: var(--font-display); }
+.metric .v.risk { color: var(--fail); }
+
+ol { margin: 0; padding-left: 20px; display: grid; gap: 8px; font-size: 14px; color: var(--ink-soft); }
+ol b { color: var(--ink); }
+.pos { color: var(--pass); font-weight: 600; }
 .empty { color: var(--muted); font-size: 13px; margin: 0; }
 </style>
