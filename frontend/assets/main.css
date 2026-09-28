@@ -30,6 +30,7 @@
   --warn-bg: #faf0dd;
   --fail-bg: #f7e6e6;
   --unknown-bg: #eceff2;
+  --on-status: #ffffff;   /* text on a solid pass/fail fill */
 
   /* Accent — actions, primary buttons, focus, chart entry line */
   --accent: #2f5fd8;
@@ -80,6 +81,7 @@
   --warn-bg: #2c2413;
   --fail-bg: #2e181c;
   --unknown-bg: #1e2836;
+  --on-status: #0c1117;
 
   --accent: #4f86ff;
   --accent-strong: #6f9dff;
@@ -144,6 +146,24 @@ code {
 /* ------------------------------------------------------------------ *
  * Shared utilities (global so scoped components can reuse them)
  * ------------------------------------------------------------------ */
+
+/* Card shell + section title (used by the page and by components) */
+.card {
+  background: var(--surface);
+  border: 1px solid var(--line);
+  border-radius: var(--radius-lg);
+  padding: 18px 20px;
+  box-shadow: var(--shadow-sm);
+}
+.card-title {
+  font-family: var(--font-display);
+  font-size: 14px;
+  font-weight: 700;
+  margin: 0;
+  text-transform: uppercase;
+  letter-spacing: .06em;
+  color: var(--muted);
+}
 
 /* Status badge / pill */
 .badge {

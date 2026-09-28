@@ -77,7 +77,12 @@ class MarketData:
         if r.status_code == 429:
             await asyncio.sleep(2)
             return await self._get(path, ttl, **params)
-        r.raise_for_status()
+        if r.is_error:
+            # httpx's default message embeds the request URL, including ?token=<key>.
+            # These strings reach the browser (row errors, /api/health), so keep them key-free.
+            raise httpx.HTTPStatusError(
+                f"Finnhub {path} returned HTTP {r.status_code}", request=r.request, response=r
+            )
         data = r.json()
         self.cache.set(key, data, ttl)
         return data

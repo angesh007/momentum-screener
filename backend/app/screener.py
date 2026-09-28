@@ -3,13 +3,24 @@ from __future__ import annotations
 
 import asyncio
 import logging
+from datetime import datetime
 from typing import Optional
 
 from .data import market
 from .models import Candle, NewsItem, Pillar, ScreenResult, Thresholds
 from .patterns import detect_setup
+from .session import ET
+from .signals import build_plan, evaluate
 
 log = logging.getLogger("screener")
+
+
+def _today_volume(candles: list[Candle]) -> Optional[float]:
+    """Volume traded so far today (ET). The candle window reaches back 8 hours,
+    which before ~04:00 ET would otherwise count yesterday's after-hours."""
+    today = datetime.now(ET).date()
+    vol = sum(c.v for c in candles if datetime.fromtimestamp(c.t, ET).date() == today)
+    return vol or None
 
 
 def _fmt_shares(n: Optional[float]) -> str:
@@ -34,6 +45,9 @@ async def screen_symbol(symbol: str, th: Thresholds, include_setup: bool) -> Scr
     price = quote.get("c") or None
     gap = quote.get("dp")
     shares_out = (profile.get("shareOutstanding") or 0) * 1e6 or None
+    # Live market value; Finnhub's profile figure (in millions) is as of the last close.
+    market_cap = (price * shares_out) if (price and shares_out) else ((profile.get("marketCapitalization") or 0) * 1e6 or None)
+    open_, high, low, prev_close = (quote.get(k) or None for k in ("o", "h", "l", "pc"))
     avg_vol = (metrics.get("10DayAverageTradingVolume") or metrics.get("3MonthAverageTradingVolume") or 0) * 1e6 or None
 
     candles: list[Candle] = []
@@ -43,7 +57,7 @@ async def screen_symbol(symbol: str, th: Thresholds, include_setup: bool) -> Scr
         except Exception as e:
             log.info("candles unavailable for %s: %s", symbol, e)
 
-    today_vol = sum(c.v for c in candles) if candles else None
+    today_vol = _today_volume(candles) if candles else None
     rvol = (today_vol / avg_vol) if (today_vol and avg_vol) else None
 
     pillars = [
@@ -59,6 +73,8 @@ async def screen_symbol(symbol: str, th: Thresholds, include_setup: bool) -> Scr
     in_play = all(p.status in ("pass", "warn") or (p.key == "rvol" and p.status == "unknown") for p in pillars)
 
     setup = detect_setup(candles) if (include_setup and candles) else None
+    plan = build_plan(setup, price, gap, high, low, prev_close)
+    signal, reasons, signal_note = evaluate(pillars, in_play, th, price, gap, open_, high, low, setup, plan)
 
     return ScreenResult(
         symbol=symbol,
@@ -69,12 +85,21 @@ async def screen_symbol(symbol: str, th: Thresholds, include_setup: bool) -> Scr
         today_volume=today_vol,
         avg_volume=avg_vol,
         shares_outstanding=shares_out,
+        market_cap=market_cap,
+        open=open_,
+        high=high,
+        low=low,
+        prev_close=prev_close,
         pillars=pillars,
         score=int(score * 2),  # 0–10 so half-credit stays an integer
         in_play=in_play,
         catalyst=news[0] if news else None,
         news_count=len(news),
         setup=setup,
+        plan=plan,
+        signal=signal,
+        signal_reasons=reasons,
+        signal_note=signal_note,
     )
 
 
@@ -105,7 +130,7 @@ def _rvol_pillar(rvol, today_vol, avg_vol, th) -> Pillar:
     if rvol is None:
         note = ("Needs intraday candles — a Finnhub paid plan. Check RVol on your scanner."
                 if market.candles_blocked else "No intraday volume yet" if avg_vol else "No average volume from Finnhub")
-        return Pillar(key="rvol", label="Rel. volume", status="unknown", display="—", note=note)
+        return Pillar(key="rvol", label="Rel. volume", status="unknown", display="N/A", note=note)
     status = "pass" if rvol >= th.rvol_min else ("warn" if rvol >= th.rvol_min * 0.5 else "fail")
     return Pillar(
         key="rvol", label="Rel. volume", status=status, value=rvol,

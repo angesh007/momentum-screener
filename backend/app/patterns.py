@@ -28,6 +28,15 @@ def _round(x: Optional[float]) -> Optional[float]:
     return None if x is None else round(x, 2)
 
 
+REWARD_RISK = 2.0
+
+
+def r_levels(entry: float, stop: float) -> tuple[float, float, float]:
+    """(risk, scale_out at +1R, target at +2R) — the Step 5 exit plan."""
+    risk = entry - stop
+    return risk, entry + risk, entry + REWARD_RISK * risk
+
+
 def detect_setup(candles: list[Candle]) -> Setup:
     if len(candles) < 15:
         return Setup(pattern="none", stage="not enough candles", notes=["Need at least 15 one-minute candles."])
@@ -83,10 +92,9 @@ def _bull_flag(candles: list[Candle], ema9: list[float]) -> Optional[Setup]:
     breaking = last.c > prev.h
     entry = prev.h if not breaking else last.c
     stop = max(pb_low, e9[-1]) if e9[-1] < entry else pb_low
-    risk = entry - stop
+    risk, scale_out, target = r_levels(entry, stop)
     if risk <= 0:
         return None
-    target = entry + 2 * risk
     notes = [
         f"Pole gained {gain*100:.1f}% over {j-i+1} candles.",
         f"Pullback retraced {retrace*100:.0f}% on {pb_vol/impulse_vol*100:.0f}% of impulse volume.",
@@ -95,8 +103,8 @@ def _bull_flag(candles: list[Candle], ema9: list[float]) -> Optional[Setup]:
     return Setup(
         pattern="bull_flag",
         stage="breaking" if breaking else "forming",
-        entry=_round(entry), stop=_round(stop), scale_out=_round(entry + risk), target=_round(target),
-        risk=_round(risk), reward_risk=2.0, ema9=_round(e9[-1]), notes=notes,
+        entry=_round(entry), stop=_round(stop), scale_out=_round(scale_out), target=_round(target),
+        risk=_round(risk), reward_risk=REWARD_RISK, ema9=_round(e9[-1]), notes=notes,
     )
 
 
@@ -114,7 +122,7 @@ def _flat_top(candles: list[Candle], ema9: list[float], tol: float = 0.006) -> O
     consolidation_low = min(c.l for c in window[-8:])
     entry = ceiling if not breaking else last.c
     stop = max(consolidation_low, ema9[-1]) if ema9[-1] < entry else consolidation_low
-    risk = entry - stop
+    risk, scale_out, target = r_levels(entry, stop)
     if risk <= 0:
         return None
     avg_vol = sum(c.v for c in window[:-1]) / max(len(window) - 1, 1)
@@ -126,6 +134,6 @@ def _flat_top(candles: list[Candle], ema9: list[float], tol: float = 0.006) -> O
     return Setup(
         pattern="flat_top",
         stage="breaking" if breaking else "consolidating",
-        entry=_round(entry), stop=_round(stop), scale_out=_round(entry + risk), target=_round(entry + 2 * risk),
-        risk=_round(risk), reward_risk=2.0, ema9=_round(ema9[-1]), notes=notes,
+        entry=_round(entry), stop=_round(stop), scale_out=_round(scale_out), target=_round(target),
+        risk=_round(risk), reward_risk=REWARD_RISK, ema9=_round(ema9[-1]), notes=notes,
     )

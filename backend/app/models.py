@@ -2,6 +2,7 @@ from typing import Literal, Optional
 from pydantic import BaseModel, Field
 
 PillarStatus = Literal["pass", "fail", "warn", "unknown"]
+SignalKind = Literal["strong_buy", "buy", "hold", "sell", "strong_sell"]
 
 
 class Thresholds(BaseModel):
@@ -52,6 +53,31 @@ class Setup(BaseModel):
     notes: list[str] = Field(default_factory=list)
 
 
+class TradePlan(BaseModel):
+    """Entry / exit levels shown on every row.
+
+    source="setup"     — copied from the 1-min bull-flag / flat-top setup (paid plan).
+    source="day_range" — derived from today's quote: entry on a break of the
+                         high of day, stop under the low of day (free plan).
+    """
+    source: Literal["setup", "day_range"]
+    entry: float
+    stop: float
+    scale_out: float                     # +1R: sell half, stop to break-even
+    target: float                        # +2R exit on the rest
+    risk: float                          # per share
+    reward_risk: float
+    risk_pct: float                      # risk as % of entry — how wide the stop is
+    note: str = ""
+
+
+class SignalReason(BaseModel):
+    factor: Literal["pillars", "rvol", "momentum", "trend", "breakout", "setup", "risk_reward", "catalyst"]
+    label: str
+    detail: str = ""
+    impact: Literal["positive", "negative", "neutral"]
+
+
 class ScreenResult(BaseModel):
     symbol: str
     name: str = ""
@@ -61,12 +87,21 @@ class ScreenResult(BaseModel):
     today_volume: Optional[float] = None
     avg_volume: Optional[float] = None
     shares_outstanding: Optional[float] = None
+    market_cap: Optional[float] = None   # live price × shares outstanding, else Finnhub's profile value
+    open: Optional[float] = None
+    high: Optional[float] = None
+    low: Optional[float] = None
+    prev_close: Optional[float] = None
     pillars: list[Pillar]
     score: int
     in_play: bool
     catalyst: Optional[NewsItem] = None
     news_count: int = 0
     setup: Optional[Setup] = None
+    plan: Optional[TradePlan] = None
+    signal: SignalKind = "hold"
+    signal_reasons: list[SignalReason] = Field(default_factory=list)
+    signal_note: str = ""                # what's missing for a stronger signal
     error: Optional[str] = None
 
 

@@ -2,7 +2,7 @@ from contextlib import asynccontextmanager
 from datetime import datetime, timezone
 from pathlib import Path
 
-from fastapi import FastAPI, HTTPException
+from fastapi import Depends, FastAPI, HTTPException
 from fastapi.responses import RedirectResponse
 from fastapi.middleware.cors import CORSMiddleware
 
@@ -22,7 +22,7 @@ async def lifespan(app: FastAPI):
     await market.close()
 
 
-app = FastAPI(title="Momentum Screener", version="0.3.0", lifespan=lifespan)
+app = FastAPI(title="Momentum Screener", version="0.4.0", lifespan=lifespan)
 app.add_middleware(
     CORSMiddleware,
     allow_origins=[settings.frontend_origin, "http://localhost:3000", "http://127.0.0.1:3000"],
@@ -103,8 +103,10 @@ async def screen(req: ScreenRequest):
 
 
 @app.get("/api/stock/{symbol}", response_model=StockDetail)
-async def stock(symbol: str):
-    result = await screen_symbol(symbol, Thresholds(), include_setup=True)
+async def stock(symbol: str, th: Thresholds = Depends()):
+    """Thresholds are optional query params (defaults as before) so the drawer
+    scores the stock with the same cut-offs the board used."""
+    result = await screen_symbol(symbol, th, include_setup=True)
     if result.error:
         raise HTTPException(502, result.error)
     candles = await market.candles_1m(symbol.upper())

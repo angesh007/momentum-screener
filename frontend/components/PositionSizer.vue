@@ -1,7 +1,8 @@
 <script setup lang="ts">
 import { computed, useState } from '#imports'
-import type { Setup } from '~/composables/useScreener'
-const props = defineProps<{ setup: Setup }>()
+// Accepts a Setup or a TradePlan — both carry the same entry/stop/+1R/+2R levels.
+type Levels = { entry?: number; stop?: number; scale_out?: number; target?: number; risk?: number }
+const props = defineProps<{ setup: Levels }>()
 const riskDollars = useState('riskDollars', () => 100)
 const shares = computed(() => props.setup.risk ? Math.floor(riskDollars.value / props.setup.risk) : 0)
 const cost = computed(() => shares.value * (props.setup.entry ?? 0))

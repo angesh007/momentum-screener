@@ -127,7 +127,7 @@ the filter working, not a bug.
 |---|---|---|
 | Quote, gap %, name, shares outstanding, avg volume, news | ✔ | Pillars 1, 2, 4, 5 are live. 4 calls per ticker, 60 calls/min → max 40 tickers per scan. |
 | Screener endpoint | ✘ | You paste the candidates. |
-| 1-minute candles | ✘ (paid) | Relative volume shows "—" and the setup/chart say unavailable. A row can still be "in play" on the other four pillars — it's marked as unverified on RVol. On a paid plan everything switches on with no code change. |
+| 1-minute candles | ✘ (paid) | Relative volume shows "N/A" and the setup/chart say unavailable; entry / target / stop fall back to a high-of-day-break plan from today's range. A row can still be "in play" on the other four pillars — it's marked as unverified on RVol. On a paid plan everything switches on with no code change. |
 | True float | ✘ | Shares outstanding is used as a proxy, labelled as such. |
 | Level 2 / Time & Sales | ✘ | Your broker. |
 
@@ -139,7 +139,13 @@ the filter working, not a bug.
 | GET | `/api/session` | ET time, phase (premarket / open / golden / midday / afterhours / closed) |
 | GET | `/api/universe` | tickers from `universe.txt` |
 | POST | `/api/screen` | `{symbols, thresholds, include_setups}` → ranked results + `in_play` (empty `symbols` = universe.txt) |
-| GET | `/api/stock/{symbol}` | pillars, setup, last 120 candles, 48h news |
+| GET | `/api/stock/{symbol}` | pillars, setup, last 120 candles, 48h news. Optional threshold query params (`?gap_pct_min=5…`) |
+
+Each result also carries (all additive, older clients can ignore them):
+
+- `market_cap` — live price × shares outstanding (Finnhub's profile value if either is missing); `open`, `high`, `low`, `prev_close` from the quote.
+- `plan` — `entry`, `target` (+2R), `scale_out` (+1R), `stop`, `risk`, `risk_pct`, `reward_risk`. `source: "setup"` copies the 1-min bull-flag / flat-top levels; `source: "day_range"` (free plan) is entry on a break of the high of day, stop under the low of day. `null` for stocks red on the day.
+- `signal` — `strong_buy` / `buy` / `hold` / `sell` / `strong_sell`, with `signal_reasons` (factor, label, detail, positive/negative/neutral) and `signal_note` (what's missing for a stronger signal). Rules are in `backend/app/signals.py`: strong buy needs in play + measured RVol ≥ threshold + a live chart setup with a 2:1 plan and a stop within 10% + holding above the open, so on the free plan the best signal is **buy**.
 
 ## Project layout
 
@@ -149,11 +155,13 @@ backend/app/
   data.py        Finnhub client (rate-limited, cached)
   screener.py    five-pillar scoring
   patterns.py    bull flag / flat top / 9 EMA / stop & targets
+  signals.py     trade plan + strong buy … strong sell with reasons
   session.py     ET trading-window logic
 frontend/
   pages/index.vue           board, controls, detail drawer
   components/StockRow.vue   ticker + gap + pillar strip + setup line
   components/PillarStrip.vue, CandleChart.vue, PositionSizer.vue, RulesPanel.vue
+  components/SignalBadge.vue, MarketValueChart.vue, ConnectionScreen.vue
   composables/useScreener.ts
 ```
 
@@ -161,9 +169,9 @@ frontend/
 
 - **500 `useScreener is not defined`** — the project path contains `(`, `)` or similar (e.g. `…-only(1)`), which breaks Nuxt's file scanning. Rename the folder, delete `frontend/.nuxt`, restart.
 
-- **"Backend isn't reachable"** — start it (`make backend`) and check `NUXT_PUBLIC_API_BASE` in `frontend/.env`.
+- **"Connecting to trading engine…" for a long time** — a sleeping Render instance takes up to a minute or so to wake; the page polls and opens the dashboard by itself. After 3 minutes it shows **Retry connection**. Locally: start the backend (`make backend`) and check `NUXT_PUBLIC_API_BASE` in `frontend/.env`.
 - **"No Finnhub key found"** — edit `backend/.env`, restart uvicorn.
-- **Rel. volume shows "—"** — expected on the free plan (no candles). Check RVol on your scanner.
+- **Rel. volume shows "N/A"** — expected on the free plan (no candles). Check RVol on your scanner.
 - **"Nothing to scan"** — the ticker box is empty and `universe.txt` has no tickers.
 - **Rate limit errors** — scan fewer tickers; the free plan is 60 calls/min.
 
