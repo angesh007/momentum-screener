@@ -14,6 +14,9 @@ import ThemeToggle from '~/components/ThemeToggle.vue'
 import SignalBadge from '~/components/SignalBadge.vue'
 import MarketValueChart from '~/components/MarketValueChart.vue'
 import ConnectionScreen from '~/components/ConnectionScreen.vue'
+import SessionCandles from '~/components/SessionCandles.vue'
+import GapFloatScatter from '~/components/GapFloatScatter.vue'
+import SignalDonut from '~/components/SignalDonut.vue'
 
 const {
   results, inPlayList, scannedAt, candlesAvailable, session, loading, scanSlow, error, thresholds,
@@ -35,6 +38,8 @@ const symbols = computed(() => symbolsText.value.split(/[\s,]+/).map(s => s.trim
 const matchesFilter = (r: ScreenResult) => !signalFilter.value || r.signal === signalFilter.value
 const inPlay = computed(() => results.value.filter(r => inPlayList.value.includes(r.symbol) && matchesFilter(r)))
 const watching = computed(() => results.value.filter(r => !inPlayList.value.includes(r.symbol) && matchesFilter(r)))
+// Charts follow the signal filter, like the lists below them.
+const charted = computed(() => [...inPlay.value, ...watching.value])
 const canScan = computed(() => !loading.value && symbols.value.length > 0 && connection.value === 'ready')
 const ready = computed(() => connection.value === 'ready')
 
@@ -186,6 +191,13 @@ onUnmounted(() => window.removeEventListener('keydown', onKey))
         <section class="board" :class="{ refreshing: loading }">
           <p v-if="loading" class="slow-note"><span class="spinner" /> Rescanning{{ scanSlow ? ' — still working…' : '…' }}</p>
 
+          <div class="charts">
+            <div class="charts-grid">
+              <SessionCandles :results="charted" :in-play="inPlayList" :gap-min="thresholds.gap_pct_min" @open="open" />
+              <GapFloatScatter :results="charted" :in-play="inPlayList" :th="thresholds" @open="open" />
+            </div>
+          </div>
+
           <h2>In play <span class="count">{{ inPlay.length }} of 10 max</span></h2>
           <p v-if="!inPlay.length" class="empty card">
             {{ signalFilter ? `No in-play stocks with a ${SIGNALS[signalFilter].label} signal.` : 'Nothing passes all five pillars right now. That\'s normal outside the open — it\'s a filter, not a suggestion box.' }}
@@ -207,6 +219,7 @@ onUnmounted(() => window.removeEventListener('keydown', onKey))
               <h3 class="card-title">Signals</h3>
               <button v-if="signalFilter" class="link" @click="signalFilter = null">Show all</button>
             </div>
+            <SignalDonut :counts="signalCounts" :active="signalFilter" @pick="k => signalFilter = signalFilter === k ? null : k" />
             <div class="sig-grid">
               <button
                 v-for="k in SIGNAL_ORDER"
@@ -347,14 +360,17 @@ onUnmounted(() => window.removeEventListener('keydown', onKey))
             <p v-else class="empty">No long plan: the stock is red on the day or has no range yet. Wait for it to turn green and set a high of day.</p>
           </section>
 
-          <!-- Chart setup (screener's read of the 1-min chart) -->
+          <!-- Price chart: 1-min candles (paid plan) or today's candle from the quote -->
           <section class="card">
             <div class="card-head">
-              <h3 class="card-title">Chart setup</h3>
+              <h3 class="card-title">Price chart</h3>
               <span v-if="hasSetup" class="badge badge--accent">{{ patternName(sel.setup!.pattern) }} · {{ sel.setup!.stage }}</span>
               <span v-else class="badge badge--unknown">No setup yet</span>
             </div>
-            <CandleChart :candles="selected.candles" :setup="sel.setup" />
+            <CandleChart
+              :candles="selected.candles" :setup="sel.setup" :plan="plan"
+              :day="{ t: sel.quote_time, o: sel.open, h: sel.high, l: sel.low, c: sel.price, pc: sel.prev_close }"
+            />
             <ul v-if="hasSetup && sel.setup!.notes.length" class="notes">
               <li v-for="n in sel.setup!.notes" :key="n">{{ n }}</li>
             </ul>
@@ -467,6 +483,11 @@ textarea:focus-visible, input[type=number]:focus-visible { border-color: var(--a
 .side { display: grid; gap: 14px; position: sticky; top: 16px; margin-top: 26px; }
 .board { margin-top: 8px; min-width: 0; }
 .board.refreshing .list { opacity: .7; transition: opacity .2s ease; }
+.charts { container-type: inline-size; margin-top: 14px; }
+.charts-grid { display: grid; gap: 14px; align-items: start; }
+@container (min-width: 760px) {
+  .charts-grid { grid-template-columns: minmax(0, 1.4fr) minmax(0, 1fr); }
+}
 .board h2 { font-family: var(--font-display); font-size: 19px; margin: 22px 0 12px; display: flex; align-items: baseline; gap: 8px; }
 .count { color: var(--muted); font-weight: 400; font-size: 14px; }
 .list { display: grid; gap: 12px; }

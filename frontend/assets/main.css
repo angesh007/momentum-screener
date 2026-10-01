@@ -38,6 +38,9 @@
   --accent-ink: #ffffff;
   --accent-bg: #e7edfb;
 
+  /* Chart series that is neither status nor action (9 EMA overlay) */
+  --ema: #8a4fd0;
+
   /* Depth */
   --shadow-sm: 0 1px 2px rgba(20, 33, 61, .06);
   --shadow: 0 4px 16px rgba(20, 33, 61, .10);
@@ -87,6 +90,8 @@
   --accent-strong: #6f9dff;
   --accent-ink: #0c1117;
   --accent-bg: #172338;
+
+  --ema: #b48cff;
 
   --shadow-sm: 0 1px 2px rgba(0, 0, 0, .35);
   --shadow: 0 4px 16px rgba(0, 0, 0, .45);

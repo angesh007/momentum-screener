@@ -21,6 +21,7 @@ export interface ScreenResult {
   today_volume?: number; avg_volume?: number
   shares_outstanding?: number; market_cap?: number
   open?: number; high?: number; low?: number; prev_close?: number
+  quote_time?: number   // unix seconds of the quote — dates the daily candle
   pillars: Pillar[]; score: number; in_play: boolean
   catalyst?: NewsItem; news_count: number; setup?: Setup; plan?: TradePlan
   // Optional so an older backend without signals still renders.

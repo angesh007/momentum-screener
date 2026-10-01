@@ -90,6 +90,7 @@ async def screen_symbol(symbol: str, th: Thresholds, include_setup: bool) -> Scr
         high=high,
         low=low,
         prev_close=prev_close,
+        quote_time=quote.get("t") or None,
         pillars=pillars,
         score=int(score * 2),  # 0–10 so half-credit stays an integer
         in_play=in_play,

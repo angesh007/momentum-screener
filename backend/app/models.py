@@ -92,6 +92,7 @@ class ScreenResult(BaseModel):
     high: Optional[float] = None
     low: Optional[float] = None
     prev_close: Optional[float] = None
+    quote_time: Optional[int] = None     # unix seconds of the quote above — dates the daily OHLC candle
     pillars: list[Pillar]
     score: int
     in_play: bool
